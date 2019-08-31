@@ -4,11 +4,11 @@ clean:
 	rm signupeoseos.wast
 	rm signupeoseos.wasm
 
-abi:
-	eosiocpp -g signupeoseos.abi signupeoseos.hpp
+wasm:
+	eosio-cpp -I=. -o signupeoseos.wasm signupeoseos.cpp
 
-wast:
-	eosiocpp -o signupeoseos.wast signupeoseos.cpp
+wast:wasm
+	eosio-wasm2wast -o signupeoseos.wast signupeoseos.wasm
 
 deploy:
 	cleos set contract signupeoseos ../signupeoseos -p signupeoseos

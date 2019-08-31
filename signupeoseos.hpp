@@ -2,19 +2,26 @@
 // Created by Hongbo Tang on 2018/7/5.
 //
 
-#include <eosiolib/eosio.hpp>
-#include <eosiolib/asset.hpp>
-#include <eosiolib/types.hpp>
-#include <eosiolib/action.hpp>
-#include <eosiolib/symbol.hpp>
-#include <eosiolib/crypto.h>
+#include <eosio/eosio.hpp>
+#include <eosio/asset.hpp>
+#include <eosio/action.hpp>
+#include <eosio/symbol.hpp>
+#include <eosio/crypto.hpp>
+
+#define N(name) #name##_n.value
+
+using account_name = eosio::name;
+using weight_type         = uint16_t;
+
 #include <cstring>
 using namespace eosio;
 using namespace std;
 
-class signupeoseos: public contract {
+class [[eosio::contract("signupeoseos")]] signupeoseos: public contract {
+using contract::contract;
+
 public:
-    signupeoseos(account_name self): contract(self){};
+    [[eosio::action]]
     void transfer(account_name from, account_name to, asset quantity, string memo);
 private:
     struct signup_public_key {
@@ -47,16 +54,17 @@ private:
     };
 };
 
+#if 0
 #define EOSIO_ABI_EX( TYPE, MEMBERS ) \
 extern "C" { \
     void apply( uint64_t receiver, uint64_t code, uint64_t action ) { \
         auto self = receiver; \
         if( action == N(onerror)) { \
             /* onerror is only valid if it is for the "eosio" code account and authorized by "eosio"'s "active permission */ \
-            eosio_assert(code == N(eosio), "onerror action's are only valid from the \"eosio\" system account"); \
+            check(code == N(eosio), "onerror action's are only valid from the \"eosio\" system account"); \
         } \
         if((code == N(eosio.token) && action == N(transfer)) ) { \
-            TYPE thiscontract( self ); \
+            TYPE thiscontract( name(self) ); \
             switch( action ) { \
                 EOSIO_API( TYPE, MEMBERS ) \
             } \
@@ -66,6 +74,7 @@ extern "C" { \
 } \
 
 EOSIO_ABI_EX(signupeoseos, (transfer))
+#endif
 
 // Copied from https://github.com/bitcoin/bitcoin
 
