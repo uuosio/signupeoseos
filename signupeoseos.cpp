@@ -3,6 +3,8 @@
 //
 
 #include "signupeoseos.hpp"
+#include <eosio/types.h>
+#include <eosio/crypto.h>
 
 static eosio::symbol CORE_SYMBOL = eosio::symbol("UUOS", 4);
 
@@ -32,6 +34,7 @@ void signupeoseos::transfer(account_name from, account_name to, asset quantity, 
     account_name new_account_name(account_name_str);
 
     string public_key_str = memo.substr(separator_pos + 1);
+
     check(public_key_str.length() == 53, "Length of publik key should be 53");
 
     string pubkey_prefix("EOS");
@@ -41,13 +44,15 @@ void signupeoseos::transfer(account_name from, account_name to, asset quantity, 
 
     vector<unsigned char> vch;
     check(decode_base58(base58substr, vch), "Decode pubkey failed");
+
     check(vch.size() == 37, "Invalid public key");
 
     array<unsigned char,33> pubkey_data;
     copy_n(vch.begin(), 33, pubkey_data.begin());
 
-    checksum160 check_pubkey = eosio::ripemd160(reinterpret_cast<char *>(pubkey_data.data()), 33);
-    check(memcmp(check_pubkey.data(), &vch.end()[-4], 4) == 0, "invalid public key");
+    capi_checksum160 check_pubkey;
+    ::ripemd160(reinterpret_cast<char *>(pubkey_data.data()), 33, &check_pubkey);
+    check(memcmp(check_pubkey.hash, &vch.end()[-4], 4) == 0, "invalid public key");
 
     asset stake_net(1000, CORE_SYMBOL);
     asset stake_cpu(1000, CORE_SYMBOL);
@@ -102,3 +107,22 @@ void signupeoseos::transfer(account_name from, account_name to, asset quantity, 
             make_tuple(_self, new_account_name, stake_net, stake_cpu, true)
     ).send();
 }
+
+#define EOSIO_DISPATCH_EX( TYPE, MEMBERS ) \
+extern "C" { \
+    void apply( uint64_t receiver, uint64_t code, uint64_t action ) { \
+        auto self = receiver; \
+        if( action == N(onerror)) { \
+            /* onerror is only valid if it is for the "eosio" code account and authorized by "eosio"'s "active permission */ \
+            check(code == N(eosio), "onerror action's are only valid from the \"eosio\" system account"); \
+        } \
+        if((code == N(eosio.token) && action == N(transfer)) ) { \
+            switch( action ) { \
+                EOSIO_DISPATCH_HELPER( TYPE, MEMBERS ) \
+            } \
+            /* does not allow destructor of thiscontract to run: eosio_exit(0); */ \
+        } \
+   } \
+}
+
+EOSIO_DISPATCH_EX( signupeoseos, (transfer) )
