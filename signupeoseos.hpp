@@ -17,7 +17,7 @@ using weight_type         = uint16_t;
 using namespace eosio;
 using namespace std;
 
-class [[eosio::contract("signupeoseos")]] signupeoseos: public contract {
+class [[eosio::contract("signupeos")]] signupeoseos: public contract {
 using contract::contract;
 
 public:

@@ -3,8 +3,8 @@
 //
 
 #include "signupeoseos.hpp"
-#include <eosio/types.h>
-#include <eosio/crypto.h>
+// #include <eosio/types.h>
+// #include <eosio/crypto.h>
 
 static eosio::symbol CORE_SYMBOL = eosio::symbol("UUOS", 4);
 
@@ -30,14 +30,14 @@ void signupeoseos::transfer(account_name from, account_name to, asset quantity, 
     check(separator_pos != string::npos, "Account name and other command must be separated with space or minuses");
 
     string account_name_str = memo.substr(0, separator_pos);
-    check(account_name_str.length() == 12, "Length of account name should be 12");
+    check(account_name_str.length() >= 8, "Length of account name should be >= 8");
     account_name new_account_name(account_name_str);
 
     string public_key_str = memo.substr(separator_pos + 1);
 
-    check(public_key_str.length() == 53, "Length of publik key should be 53");
+    check(public_key_str.length() == 54, "Length of publik key should be 53");
 
-    string pubkey_prefix("EOS");
+    string pubkey_prefix("UUOS");
     auto result = mismatch(pubkey_prefix.begin(), pubkey_prefix.end(), public_key_str.begin());
     check(result.first == pubkey_prefix.end(), "Public key should be prefix with EOS");
     auto base58substr = public_key_str.substr(pubkey_prefix.length());
@@ -50,12 +50,12 @@ void signupeoseos::transfer(account_name from, account_name to, asset quantity, 
     array<unsigned char,33> pubkey_data;
     copy_n(vch.begin(), 33, pubkey_data.begin());
 
-    capi_checksum160 check_pubkey;
-    ::ripemd160(reinterpret_cast<char *>(pubkey_data.data()), 33, &check_pubkey);
-    check(memcmp(check_pubkey.hash, &vch.end()[-4], 4) == 0, "invalid public key");
+    checksum160 check_pubkey = ripemd160(reinterpret_cast<char *>(pubkey_data.data()), 33);
+    auto _check_pubkey = check_pubkey.extract_as_byte_array();
+    check(memcmp(_check_pubkey.data(), &vch.end()[-4], 4) == 0, "invalid public key");
 
     asset stake_net(1000, CORE_SYMBOL);
-    asset stake_cpu(1000, CORE_SYMBOL);
+    asset stake_cpu(4000, CORE_SYMBOL);
     asset buy_ram = quantity - stake_net - stake_cpu;
     check(buy_ram.amount > 0, "Not enough balance to buy ram");
 
